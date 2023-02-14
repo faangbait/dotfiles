@@ -1,0 +1,41 @@
+---
+- hosts: localhost
+  become: no
+  vars:
+    kube_version: v1.24.0
+  tasks:
+  - name: Install kube packages
+    become: yes
+    package:
+      name:
+        - helm
+      state: latest
+  
+  - name: Install kubectl
+    become: yes
+    get_url:
+      url: 'https://dl.k8s.io/release/{{ kube_version }}/bin/linux/amd64/kubectl'
+      dest: /usr/local/bin
+      mode: '0777'
+
+  - name: Configure network
+    become: yes
+    lineinfile:
+      path: /etc/hosts
+      line: '{{ item }}'
+    loop:
+      - 10.0.0.254 node1 node1.madeof.glass k8s-control-plane-lb
+      - 10.0.0.253 node2 node2.madeof.glass
+      - 10.0.0.252 node3 node3.madeof.glass
+
+  - name: Create kube directory
+    file:
+      path: '$HOME/.kube'
+      state: directory
+      owner: '{{ ansible_user_id }}'
+      group: '{{ ansible_user_id }}'
+      mode: '751'
+  
+  - name: Fetch kubecfg
+    shell: 'scp node1:$HOME/.kube/config $HOME/.kube/config && chmod 600 $HOME/.kube/config'
+    changed_when: true

@@ -1,0 +1,259 @@
+---
+- hosts: localhost
+  roles:
+
+# Install basic utilities
+    - role: 'sys'
+      become: true
+      tags:
+        - sys
+
+# Securely decrypts and installs a GnuPG key stored openly in a public repo
+    - role: 'secrets'
+      become: false
+      tags:
+        - sys
+        - secrets
+      vars:
+        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
+        primary_ssh_keygrip: 2E5C2C9F1D68FC2827DBD52AC3CBC7A791B84DFD
+
+# Installs builders, sdks, and other development environment stuff
+    - role: 'gantsign.golang'
+      become: true
+      tags:
+        - devtools
+        - sys
+        - golang
+      vars:
+        golang_version: '1.18'
+        golang_install_dir: '/usr/local/go'
+        golang_gopath: '$HOME/dev/go'
+
+# Sets up a kubernetes+podman+oc pipeline for OpenShift 4; ideal for developers / OS4 Application Delivery specialists
+# Tested on CentOS 8 Stream
+
+#    - role: 'crio'
+#      become: true
+#      tags:
+#        - containers
+#      vars: 
+#        crio_os: CentOS_8_Stream
+#        crio_version: 1.23 # Match with kubernetes
+
+#    - role: 'geerlingguy.kubernetes'
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        kubernetes_version: 1.23 # Match with crio
+#        kubernetes_version_rhel_package: 1.23.5 # Match with crio
+#        kubernetes_allow_pods_on_master: true
+#        kubernetes_config_kubelet_configuration:
+#          cgroupDriver: systemd
+#          fail-swap-on: false
+
+#    - role: 'geerlingguy.helm'
+#      become: true
+#      tags:
+#        - containers
+
+#    - role: 'geerlingguy.pip'
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        pip_install_packages:
+#          - kubernetes
+
+#    - role: containers
+#      become: true
+#      tags:
+#        - containers
+#      vars:
+#        primary_gpg_keyid: 8859AB55ED3CEF31E9C1316A992A867530CC0D4F
+#        crc_version: 1.34.0 # The expected version is defined by the vscode extension -> Add OpenShift Cluster
+#        oc_package_manager_dict: # RedHat links last six hours, so filling this out is a manual process.
+          # - { OC_VERSION: 4.10.6, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/8f/8f43219...'}
+          # - { OC_VERSION: 4.10.5, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/00/0023cf3...'}
+          # - { OC_VERSION: 4.10.4, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/33/33bd768...'}
+          # - { OC_VERSION: 4.10.3, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/06/06c09f3...'}
+          # - { OC_VERSION: 4.9.26, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/a9/a9edcdb...'}
+          # - { OC_VERSION: 4.9.25, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/51/51f3c15...'}
+          # - { OC_VERSION: 4.9.24, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/f5/f5c8f62...'}
+          # - { OC_VERSION: 4.9.23, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/b6/b66efc2...'}
+          # - { OC_VERSION: 4.9.22, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/fd/fdb7619...'}
+          # - { OC_VERSION: 4.9.21, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/28/2895de3...'}
+          # - { OC_VERSION: 4.9.19, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/fb/fb6cab6...'}
+          # - { OC_VERSION: 4.9.18, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/ea/ea95c8d...'}
+          # - { OC_VERSION: 4.9.17, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/39/390268a...'}
+          # - { OC_VERSION: 4.9.15, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/af/af193ec...'}
+          # - { OC_VERSION: 4.9.13, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/79/7924552...'}
+          # - { OC_VERSION: 4.9.12, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/b6/b670659...'}
+          # - { OC_VERSION: 4.9.11, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/89/8906c39...'}
+          # - { OC_VERSION: 4.9.10, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/cd/cd81945...'}
+          # - { OC_VERSION: 4.9.9, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/da/da7f7d0...'}
+          # - { OC_VERSION: 4.9.8, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/d1/d1847ce...'}
+          # - { OC_VERSION: 4.9.7, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/fa/fa14978...'}
+          # - { OC_VERSION: 4.9.6, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/0b/0bcd279...'}
+          # - { OC_VERSION: 4.9.5, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/44/447c405...'}
+          # - { OC_VERSION: 4.9.4, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/73/739a5fd...'}
+          # - { OC_VERSION: 4.9.0, OC_URL:  'https://access.cdn.redhat.com/content/origin/files/sha256/f9/f922ab0...'}
+          # - { OC_VERSION: 4.8.35, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/2a/2ac6597...'}
+          # - { OC_VERSION: 4.7.46, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/27/2758232...'}
+          # - { OC_VERSION: 4.6.56, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/38/38d4cde...'}
+          # - { OC_VERSION: 4.5.41, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/19/1970956...'}
+          # - { OC_VERSION: 4.4.33, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/29/29102b9...'}
+          # - { OC_VERSION: 4.3.40, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/7f/7f55a91...'}
+          # - { OC_VERSION: 4.2.36, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/bb/bb0c28c...'}
+          # - { OC_VERSION: 4.1.41, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/87/87dc054...'}
+          # - { OC_VERSION: 3.11.664, OC_URL: 'https://access.cdn.redhat.com/content/origin/files/sha256/c4/c48c0...'}
+
+
+# Builds and configures userspace tools
+
+    - role: tvieira.powerline-fonts
+      become: true
+      tags:
+        - fonts
+      vars:
+        all_users:
+          - user: ss
+            homedir: /home/ss
+        all_fonts:
+          - SourceCodePro
+
+    - role: usr
+      become: false
+      tags:
+        - usr
+      vars:
+        firefox_extensions:
+          - '3872123' # Adblock Plus
+          - '3910071' # Bitwarden
+
+    - role: devtools
+      become: false
+      tags:
+        - devtools
+      vars:
+        local_development_root: '/var/storage/sdg/openshift'
+  
+    - role: gantsign.visual-studio-code
+      become: true
+      tags:
+        - vscode
+        - devtools
+      users:
+        - username: "{{ ansible_user_id }}"
+          visual_studio_code_extensions:
+            - aaron-bond.better-comments
+            - christian-kohler.path-intellisense
+            - eamodio.gitlens
+            - Equinusocio.vsc-material-theme
+            - Equinusocio.vsc-material-theme-icons
+            - IBM.output-colorizer
+            - mads-hartmann.bash-ide-vscode
+            - mhutchie.git-graph
+            - mikestead.dotenv
+            #- ms-azuretools.vscode-docker
+            - ms-kubernetes-tools.vscode-kubernetes-tools
+            #- ms-python.python
+            # - njpwerner.autodocstring
+            - redhat.ansible
+            #- redhat.fabric8-analytics
+            #- redhat.java
+            #- redhat.vscode-knative
+            #- redhat.vscode-openshift-extension-pack
+            #- redhat.vscode-openshift-java-pack
+            #- redhat.vscode-quarkus
+            #- redhat.vscode-tekton-pipelines
+            - redhat.vscode-yaml
+            # - ritwickdey.LiveServer
+            - Trunk.io
+            #- Tim-Koehler.helm-intellisense
+            #- VisualStudioExptTeam.vscodeintellicode
+            - wholroyd.jinja
+
+          visual_studio_code_settings_overwrite: yes
+          visual_studio_code_settings: {
+            "debug.console.fontFamily": "'MesloLGS NF'",
+            "docker.host": "unix:///run/user/1000/podman/podman.sock",
+            "files.autoSave": "onFocusChange",
+            "editor.bracketPairColorization.enabled": true,
+            "editor.guides.bracketPairs": true,
+            "editor.linkedEditing": true,
+            "editor.mouseWheelZoom": true,
+            "editor.acceptSuggestionOnEnter": "off",
+            "extensions.ignoreRecommendations": true,
+            "files.insertFinalNewline": true,
+            "git.alwaysSignOff": true,
+            "git.closeDiffOnOperation": true,
+            "git.enableCommitSigning": true,
+            "git-graph.repository.commits.mute.commitsThatAreNotAncestorsOfHead": true,
+            "git.showPushSuccessNotification": true,
+            "git.useCommitInputAsStashMessage": true,
+            "javascript.suggest.paths": false,
+            "redhat.telemetry.enabled": false,
+            "telemetry.telemetryLevel": "crash",
+            "terminal.integrated.allowChords": false,
+            "terminal.integrated.defaultProfile.linux": "bash",
+            "terminal.integrated.fontFamily": "'MesloLGS NF'",
+            "terminal.integrated.fontSize": 13,
+            "terminal.integrated.minimumContrastRatio": 7,
+            "terminal.external.linuxExec": "terminator",
+            "trunk.trunkGrayOutNonBlockingIssues": false,
+            "typescript.suggest.paths": false,
+            "window.zoomLevel": 1.25 ,
+            "window.restoreFullscreen": true,
+            "workbench.colorTheme": "Material Theme Darker High Contrast",
+            "workbench.iconTheme": "eq-material-theme-icons-darker",
+            "workbench.startupEditor": "none",
+            "materialTheme.accent": "Cyan",
+            "workbench.colorCustomizations": {
+                "[Material Theme Darker High Contrast]": {
+                    "activityBarBadge.background": "#00BCD4",
+                    "activityBar.activeBorder": "#00BCD4",
+                    "list.activeSelectionForeground": "#00BCD4",
+                    "list.inactiveSelectionForeground": "#00BCD4",
+                    "list.highlightForeground": "#00BCD4",
+                    "scrollbarSlider.activeBackground": "#00BCD450",
+                    "editorSuggestWidget.highlightForeground": "#00BCD4",
+                    "textLink.foreground": "#00BCD4",
+                    "progressBar.background": "#00BCD4",
+                    "pickerGroup.foreground": "#00BCD4",
+                    "tab.activeBorder": "#00BCD4",
+                    "notificationLink.foreground": "#00BCD4",
+                    "editorWidget.resizeBorder": "#00BCD4",
+                    "editorWidget.border": "#00BCD4",
+                    "settings.modifiedItemIndicator": "#00BCD4",
+                    "settings.headerForeground": "#00BCD4",
+                    "panelTitle.activeBorder": "#00BCD4",
+                    "breadcrumb.activeSelectionForeground": "#00BCD4",
+                    "menu.selectionForeground": "#00BCD4",
+                    "menubar.selectionForeground": "#00BCD4",
+                    "editor.findMatchBorder": "#00BCD4",
+                    "selection.background": "#00BCD440",
+                    "statusBarItem.remoteBackground": "#00BCD4"
+                }
+            },
+            "workbench.preferredDarkColorTheme": "Material Theme Darker High Contrast",
+            "workbench.editor.decorations.colors": false,
+            "workbench.editor.autoLockGroups": {
+                "workbench.input.interactive": true,
+                "imagePreview.previewEditor": true,
+                "vscode.markdown.preview.editor": true,
+                "jsProfileVisualizer.cpuprofile.table": true,
+                "jsProfileVisualizer.heapprofile.table": true,
+                "gitlens.rebase": true,
+                "jupyter-notebook": true,
+                "mainThreadWebview-markdown.preview": true
+            },
+            "workbench.editor.limit.enabled": true,
+            "workbench.editor.limit.value": 15,
+            "workbench.editor.limit.perEditorGroup": true,
+            "workbench.editor.scrollToSwitchTabs": true,
+            "workbench.editor.wrapTabs": true,
+            "window.autoDetectHighContrast": false,
+          }
+

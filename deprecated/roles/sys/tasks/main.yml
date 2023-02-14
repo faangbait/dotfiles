@@ -1,0 +1,22 @@
+---
+- name: Install EPEL
+  package:
+    name:
+      - epel-release
+
+- name: Install basic system utils
+  package:
+    name:
+      - nano
+      - git
+      - hdparm
+      - gcc
+      - make
+      - tar
+      - unzip
+      - iotop
+      - perl-core
+    state: latest
+
+- name: Update system packages
+  command: dnf update -y

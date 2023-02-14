@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  become: yes
+  vars:
+    PYTHON_VERSIONS:
+      - '3.11.0'
+      - '3.10.8'
+      - '3.9.15'
+      - '3.8.15'
+      - '3.7.14'
+
+  tasks:
+  - name: Install python dev environment
+    package:
+      name:
+        - python3-pip
+        - jq
+
+  - name: Unarchive sources
+    unarchive:
+      src: 'https://www.python.org/ftp/python/{{ item }}/Python-{{ item }}.tgz'
+      dest: '/usr/local/src/'
+      remote_src: yes
+    loop: '{{ PYTHON_VERSIONS }}'
+
+  - name: Configure sources
+    command: '/usr/local/src/Python-{{ item }}/configure --enable-optimizations --with-lto --with-ensurepip=upgrade --enable-loadable-sqlite-extensions --with-pydebug'
+    args:
+      chdir: '/usr/local/src/Python-{{ item }}'
+    loop: '{{ PYTHON_VERSIONS }}'
+
+  - name: Make sources
+    make:
+      chdir: '/usr/local/src/Python-{{ item }}'
+      params:
+        NUM_THREADS: 8
+    loop: '{{ PYTHON_VERSIONS }}'
+
+  - name: Make install
+    make:
+      chdir: '/usr/local/src/Python-{{ item }}'
+      target: altinstall
+    loop: '{{ PYTHON_VERSIONS }}'
+

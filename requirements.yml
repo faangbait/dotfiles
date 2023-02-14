@@ -1,0 +1,12 @@
+---
+roles:
+- name: gantsign.visual-studio-code
+- name: tvieira.powerline-fonts
+- name: geerlingguy.kubernetes
+- name: geerlingguy.helm
+- name: geerlingguy.pip
+- name: gantsign.golang
+
+collections:
+- name: ansible.posix
+- name: community.general

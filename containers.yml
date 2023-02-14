@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: Install packages used for containerization
+    package:
+      name:
+        - dnf-plugins-core
+        - podman
+      state: present

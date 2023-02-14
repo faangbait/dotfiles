@@ -1,0 +1,58 @@
+---
+- hosts: localhost
+  become: no
+  tasks:
+  - name: Git global configuration
+    shell: "git config --global {{ item.k }} {{ item.v }}"
+    changed_when: true
+    loop:
+      - { k: "init.defaultbranch", v: "main" }
+      - { k: "core.excludesfile", v: "$HOME/.config/git/.gitignore_global" }
+      - { k: "core.editor", v: "nano" }
+      - { k: "user.name", v: "\"S Smith\"" }
+      - { k: "user.email", v: "root@madeof.glass" }
+      - { k: "user.signingkey", v: "30CC0D4F" }
+      - { k: "commit.gpgsign", v: "true" }
+      - { k: "gpg.program", v: "gpg" }
+      - { k: "credential.helper", v: "cache" }
+      - { k: "commit.template", v: "$HOME/.config/git/.gitmessage_global" }
+
+  - name: Create ~/.config/git
+    file:
+      path: '$HOME/.config/git/'
+      state: directory
+      owner: '{{ ansible_user_id }}'
+      group: '{{ ansible_user_id }}'
+      mode: '751'
+  
+  - name: Create .gitignore_global
+    copy:
+      dest: '$HOME/.config/git/.gitignore_global'
+      mode: '644'
+      content: |
+        {% raw %}
+        .env
+        .envrc
+        .vscode/
+        logs
+        *.log
+        .venv
+        venv
+        {% endraw %}
+
+  - name: Create .gitmessage_global
+    copy:
+      dest: '$HOME/.config/git/.gitmessage_global'
+      mode: '644'
+      content: |
+        {% raw %}
+        # TITLE ##########################################
+
+        ##################################################
+
+        # BODY #################################################################
+
+        ########################################################################
+
+        # Co-authored-by: name <user@users.noreply.github.com>
+        {% endraw %}

@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: setup network
+    community.general.nmcli:
+      conn_name: Wired connection 1
+      ifname: enp8s0
+      type: ethernet
+      ip4: 10.0.0.252/24
+      gw4: 10.0.0.1
+      dns4: 10.0.0.1,1.1.1.1,9.9.9.9
+      state: present
+      autoconnect: true

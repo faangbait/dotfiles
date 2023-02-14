@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  become: no
+  roles:
+    - role: gantsign.golang
+      become: yes
+      vars:
+        golang_version: '1.19'
+        golang_install_dir: '/usr/local/go'
+        golang_gopath: '$HOME/dev/go'
+  tasks:
+    - name: add golang to .bashrc
+      lineinfile:
+        path: '$HOME/.bashrc'
+        line: 'export GOPATH=$HOME/dev/go'
+    - name: add golang to .profile
+      lineinfile:
+        path: '$HOME/.profile'
+        line: 'export GOPATH=$HOME/dev/go'

@@ -1,0 +1,68 @@
+---
+- name: Install development binaries
+  become: true
+  get_url:
+    url: '{{ item.url }}'
+    dest: '/usr/local/bin/{{ item.binary }}'
+    mode: '0755'
+  loop:
+    - { url: 'https://trunk.io/releases/trunk', binary: 'trunk' }
+
+- name: Configure vscode keybindings
+  lineinfile:
+    path: '$HOME/.config/Code/User/keybindings.json'
+    mode: '755'
+    create: yes
+    backup: yes
+    line: "  { \"key\": \"{{ item.key }}\", \"command\": \"{{ item.command }}\" },"
+    insertafter: "^\\["
+    regexp: "{{ item.command }}"
+
+  loop:
+    - { key: "ctrl+shift+alt+s", command: "workbench.action.saveWorkspaceAs" }
+    - { key: "ctrl+d ctrl+b", command: "vscode-docker.images.build" }
+    - { key: "ctrl+d ctrl+p", command: "vscode-docker.images.push" }
+    
+- name: Create ~/.config/git
+  file:
+    path: '$HOME/.config/git/'
+    state: directory
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '751'
+    
+- name: Move git templates to /etc/git
+  copy:
+    src: '{{ item }}'
+    dest: '$HOME/.config/git/{{ item }}'
+    owner: '{{ ansible_user_id }}'
+    group: '{{ ansible_user_id }}'
+    mode: '640'
+  loop:
+    - .gitignore_global
+    - .gitmessage_global
+
+- name: Git global configuration
+  command: "git config --global {{ item.k }} {{ item.v }}"
+  loop:
+    - { k: "init.defaultbranch", v: "main" }
+    - { k: "core.excludesfile", v: "$HOME/.config/git/.gitignore_global" }
+    - { k: "core.editor", v: "nano" }
+    - { k: "user.name", v: "\"S Smith\"" }
+    - { k: "user.email", v: "root@madeof.glass" }
+    - { k: "user.signingkey", v: "30CC0D4F" }
+    - { k: "commit.gpgsign", v: "true" }
+    - { k: "gpg.program", v: "gpg" }
+    - { k: "credential.helper", v: "cache" }
+    - { k: "commit.template", v: "$HOME/.config/git/.gitmessage_global" }
+
+- name: Create build mountpoint
+  become: true
+  file:
+    path: /build
+    state: directory
+    owner: root
+    group: wheel
+    mode: '770'
+    attributes: '+i'
+  ignore_errors: true

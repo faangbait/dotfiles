@@ -1,0 +1,89 @@
+---
+- name: Install packages used for containerization
+  package:
+    name: 
+      - dnf-plugins-core #4.1.0
+      - skopeo #1.6.0
+      - podman #3.4.4
+      - jq #1.6
+      - make
+    state: present
+
+- name: Podman socket
+  systemd:
+    name: podman.socket
+    enabled: yes
+    status: running
+    
+- name: First time running CRC?
+  become: false
+  stat:
+    path: '$HOME/.crc'
+  register: crc_stat    
+
+- name: Fetch CodeReady Containers 
+  unarchive:
+    src: 'https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/{{ crc_version }}/crc-linux-amd64.tar.xz'
+    dest: /usr/local/bin
+    remote_src: yes
+    extra_opts:
+      - '--strip-components=1'  
+  when: crc_stat.stat.exists is false
+
+- name: Cleanup CRC Install
+  file:
+    name: /usr/local/bin/LICENSE
+    state: absent
+  when: crc_stat.stat.exists is false
+
+- name: Get current threadcount
+  become: true
+  command: grep -c processor /proc/cpuinfo
+  register: proc_threads
+  
+- name: Config CRC CPUs
+  become: false
+  command: crc config set cpus {{ proc_threads.stdout }}
+
+- name: Get 50% of current max ram
+  become: true
+  raw: "getconf -a | grep PAGES | awk 'BEGIN {total = 1} {if (NR == 1 || NR == 3) total *=$NF} END {print int(total / (1024*1024*2))}'"
+  register: proc_mem
+
+- name: Config CRC Memory
+  become: false
+  command: crc config set memory {{ proc_mem.stdout }}
+
+- name: Config CRC Disk Size
+  become: false
+  command: crc config set disk-size 256
+
+- name: Set kubeadmin password
+  become: false
+  command: crc config set kubeadmin-password speakfriendandenter
+
+- name: Create OC Package Manager Directory
+  become: true
+  file:
+    path: '/usr/local/oc/{{ item.OC_VERSION }}'
+    state: directory
+  when: item.OC_URL | length > 0
+  loop: '{{ oc_package_manager_dict }}'
+
+- name: Get OC Client
+  become: true
+  unarchive:
+    src: '{{ item.OC_URL }}'
+    remote_src: yes
+    dest: /usr/local/oc/{{ item.OC_VERSION }}
+  when: item.OC_URL | length > 0
+  loop: '{{ oc_package_manager_dict }}'
+
+- name: install crcreds utility script
+  become: true
+  copy:
+    content: |
+      #!/bin/bash
+      eval $(crc console --credentials | grep -o "'.*'$" | awk -F"'" '{print $2}')
+    path: /usr/local/bin/crcreds
+    attributes: "+x"

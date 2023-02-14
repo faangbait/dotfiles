@@ -1,0 +1,291 @@
+---
+- hosts: localhost
+  become: no
+  tasks:
+  - name: Install console-related software
+    become: yes
+    package:
+      name:
+        - nano
+        - git
+        - ansible-core
+        - ansible-lint
+        - tar
+        - unzip
+        - tmux
+        - openssl
+        - terminator
+        - nano
+        - hdparm
+        - iotop
+        - gcc
+        - make
+        - perl-core
+      state: latest
+  
+  - name: Check if Oh My Bash exists
+    stat:
+      path: '$HOME/.oh-my-bash'
+    register: omb_exists
+
+  - name: Install Oh My Bash
+    raw: bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+    when: not omb_exists.stat.exists
+  
+  - name: Configure Oh My Bash Plugins
+    replace:
+      path: '$HOME/.bashrc'
+      after: '^plugins=('
+      before: '^)$'
+      regexp: '^(.+)$'
+      replace: 'git bashmarks'
+
+  - name: Configure Oh My Bash Completions
+    replace:
+      path: '$HOME/.bashrc'
+      after: '^completions=('
+      before: '^)$'
+      regexp: '^(.+)$'
+      replace: 'git ssh oc'
+
+  - name: Add misc lines to .bashrc
+    lineinfile:
+      path: '$HOME/.bashrc'
+      line: '{{ item }}'
+    loop:
+      - 'export GPG_TTY=$(tty)'
+      - 'export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)'
+      - 'gpgconf --launch gpg-agent'
+
+  - name: Add misc blocks to .bashrc
+    blockinfile:
+      block: |
+        if [[ -n $SSH_CONNECTION ]]; then
+          export EDITOR='nano'
+        else
+          export EDITOR='code --wait'
+        fi
+        export VISUAL="$EDITOR"
+      path: '$HOME/.bashrc'
+
+
+  - name: Configure Oh My Bash Theme
+    lineinfile:
+      path: '$HOME/.bashrc'
+      regexp: '^OSH_THEME='
+      line: OSH_THEME="powerline"
+
+  - name: Create powerline customization dir
+    file:
+      path: '$HOME/.oh-my-bash/custom/themes/powerline/'
+      state: directory
+
+  - name: Customize powerline
+    copy:
+      dest: '$HOME/.oh-my-bash/custom/themes/powerline/powerline.theme.sh'
+      content: |
+        #! bash oh-my-bash.module
+
+        source "$OSH/themes/powerline/powerline.base.sh"
+
+        PROMPT_CHAR=${POWERLINE_PROMPT_CHAR:=""}
+        POWERLINE_LEFT_SEPARATOR=${POWERLINE_LEFT_SEPARATOR:=""}
+
+        USER_INFO_SSH_CHAR=${POWERLINE_USER_INFO_SSH_CHAR:=" "}
+        USER_INFO_THEME_PROMPT_COLOR=236
+        USER_INFO_THEME_PROMPT_COLOR_SUDO=242
+
+        PYTHON_VENV_CHAR=${POWERLINE_PYTHON_VENV_CHAR:="❲p❳ "}
+        CONDA_PYTHON_VENV_CHAR=${POWERLINE_CONDA_PYTHON_VENV_CHAR:="❲c❳ "}
+        PYTHON_VENV_THEME_PROMPT_COLOR=239
+
+        SCM_NONE_CHAR=""
+        SCM_GIT_CHAR=${POWERLINE_SCM_GIT_CHAR:=" "}
+        SCM_THEME_PROMPT_CLEAN=""
+        SCM_THEME_PROMPT_DIRTY=""
+        SCM_THEME_PROMPT_CLEAN_COLOR=64
+        SCM_THEME_PROMPT_DIRTY_COLOR=52
+        SCM_THEME_PROMPT_STAGED_COLOR=24
+        SCM_THEME_PROMPT_UNSTAGED_COLOR=54
+        SCM_THEME_PROMPT_COLOR=${SCM_THEME_PROMPT_CLEAN_COLOR}
+
+        RVM_THEME_PROMPT_PREFIX=""
+        RVM_THEME_PROMPT_SUFFIX=""
+        RBENV_THEME_PROMPT_PREFIX=""
+        RBENV_THEME_PROMPT_SUFFIX=""
+        RUBY_THEME_PROMPT_COLOR=161
+        RUBY_CHAR=${POWERLINE_RUBY_CHAR:="❲r❳ "}
+
+        CWD_THEME_PROMPT_COLOR=236
+
+        LAST_STATUS_THEME_PROMPT_COLOR=52
+
+        CLOCK_THEME_PROMPT_COLOR=240
+
+        BATTERY_AC_CHAR=${BATTERY_AC_CHAR:="⚡"}
+        BATTERY_STATUS_THEME_PROMPT_GOOD_COLOR=70
+        BATTERY_STATUS_THEME_PROMPT_LOW_COLOR=208
+        BATTERY_STATUS_THEME_PROMPT_CRITICAL_COLOR=160
+
+        THEME_CLOCK_FORMAT=${THEME_CLOCK_FORMAT:="%H:%M:%S"}
+
+        IN_VIM_THEME_PROMPT_COLOR=245
+        IN_VIM_THEME_PROMPT_TEXT="vim"
+
+        POWERLINE_PROMPT=${POWERLINE_PROMPT:="python_venv cwd scm"}
+
+        _omb_theme_PROMPT_COMMAND() { __powerline_prompt_command "$@"; }
+        _omb_util_add_prompt_command _omb_theme_PROMPT_COMMAND
+
+  - name: Configure terminator dotfile
+    become: false
+    copy:
+      dest: '$HOME/.config/terminator/config'
+      mode: '644'
+      content: |
+        {% raw %}
+        [global_config]
+          focus = mouse
+          geometry_hinting = True
+          extra_styling = False
+          title_transmit_bg_color = "#3584e4"
+          title_receive_bg_color = "#ed333b"
+          enabled_plugins = CommandNotify, ActivityWatch, InactivityWatch, LaunchpadBugURLHandler, LaunchpadCodeURLHandler, APTURLHandler
+          suppress_multiple_term_dialog = True
+          always_split_with_profile = True
+          title_use_system_font = False
+          title_font = Source Code Pro Bold 10
+        [keybindings]
+        [profiles]
+          [[default]]
+            audible_bell = True
+            cursor_blink = False
+            cursor_color = "#aaaaaa"
+            font = Source Code Pro Medium 13
+            scroll_on_output = True
+            scrollback_infinite = True
+            use_system_font = False
+          [[leet]]
+            audible_bell = True
+            background_color = "#121212"
+            cursor_blink = False
+            cursor_color = "#aaaaaa"
+            cursor_color_fg = False
+            font = MesloLGS NF 12
+            foreground_color = "#fefefe"
+            scrollbar_position = hidden
+            scroll_on_keystroke = True
+            scroll_on_output = True
+            scrollback_infinite = True
+            palette = "#000000:#ff4e4e:#04c404:#e4cb49:#7777f8:#d748d7:#589a9a:#aaaaaa:#555555:#ff9898:#55ff55:#ffff55:#aaaaff:#ff55ff:#55ffff:#ffffff"
+            use_system_font = False
+        [layouts]
+          [[default]]
+            [[[child0]]]
+              type = Window
+              parent = ""
+              order = 0
+              position = 0:0
+              maximised = True
+              fullscreen = False
+              size = 3840, 2091
+              last_active_term = 7ff22595-6f8c-4432-baff-259158d10d17
+              last_active_window = True
+            [[[child1]]]
+              type = HPaned
+              parent = child0
+              order = 0
+              position = 1920
+              ratio = 0.500651890482399
+            [[[child2]]]
+              type = VPaned
+              parent = child1
+              order = 0
+              position = 1045
+              ratio = 0.5009587727708533
+            [[[terminal3]]]
+              type = Terminal
+              parent = child2
+              order = 0
+              profile = leet
+              uuid = 7ff22595-6f8c-4432-baff-259158d10d17
+            [[[terminal4]]]
+              type = Terminal
+              parent = child2
+              order = 1
+              profile = leet
+              uuid = 5ed00493-69c5-4fad-ab3f-1dcf19d0799f
+            [[[child5]]]
+              type = VPaned
+              parent = child1
+              order = 1
+              position = 1045
+              ratio = 0.5009587727708533
+            [[[terminal6]]]
+              type = Terminal
+              parent = child5
+              order = 0
+              profile = leet
+              uuid = 019fcde1-8d2b-424d-a7de-a8797b82fe76
+            [[[terminal7]]]
+              type = Terminal
+              parent = child5
+              order = 1
+              profile = leet
+              uuid = 35417e71-dfec-4f4a-9e09-20808c4de525
+          [[logs]]
+            [[[child0]]]
+              type = Window
+              parent = ""
+              order = 0
+              position = 0:0
+              maximised = True
+              fullscreen = False
+              size = 3840, 2091
+              last_active_term = 5ed00493-69c5-4fad-ab3f-1dcf19d0799f
+              last_active_window = True
+            [[[child1]]]
+              type = VPaned
+              parent = child0
+              order = 0
+              position = 1045
+              ratio = 0.5009587727708533
+            [[[child2]]]
+              type = VPaned
+              parent = child1
+              order = 0
+              position = 520
+              ratio = 0.5
+            [[[terminal3]]]
+              type = Terminal
+              parent = child2
+              order = 0
+              profile = leet
+              uuid = 7ff22595-6f8c-4432-baff-259158d10d17
+            [[[terminal4]]]
+              type = Terminal
+              parent = child2
+              order = 1
+              profile = leet
+              uuid = d9ff7102-19e7-45e6-9cf6-50b9bb702228
+            [[[child5]]]
+              type = VPaned
+              parent = child1
+              order = 1
+              position = 518
+              ratio = 0.5
+            [[[terminal6]]]
+              type = Terminal
+              parent = child5
+              order = 0
+              profile = leet
+              uuid = 5ed00493-69c5-4fad-ab3f-1dcf19d0799f
+            [[[terminal7]]]
+              type = Terminal
+              parent = child5
+              order = 1
+              profile = leet
+              uuid = c565fda5-0cc9-4537-a85f-7651cf333c9b
+        [plugins]
+
+        {% endraw %}

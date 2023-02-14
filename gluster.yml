@@ -1,0 +1,89 @@
+# fedora version
+---
+- hosts: localhost
+  become: yes
+  tasks:
+  - name: Set up gluster directories
+    file: 
+      path: '{{ item }}'
+      state: directory
+      owner: '{{ ansible_user_id }}'
+      group: '{{ ansible_user_id }}'
+      mode: '0644'
+    loop:
+    - '/data/glusterfs/glass4'
+    - '/data/glusterfs/glass5'
+    - '/data/glusterfs/glass6'
+    - '/data/glusterfs/glass7'
+    - '/data/glusterfs/glass8'
+    - '/data/glusterfs/glass9'
+    - '/mnt/replicated'
+    - '/mnt/bulk'
+  
+  - name: Mount filesystems
+    mount:
+      src: '{{ item.dr }}'
+      path: '{{ item.mnt }}'
+      fstype: xfs
+      opts: rw,inode64,noatime,nouuid
+      dump: 1
+      passno: 2
+      state: mounted
+    loop:
+      - { dr: "/dev/mapper/gluster4-brickvol", mnt: "/data/glusterfs/glass4"}
+      - { dr: "/dev/mapper/gluster5-brickvol", mnt: "/data/glusterfs/glass5"}
+      - { dr: "/dev/mapper/gluster6-brickvol", mnt: "/data/glusterfs/glass6"}
+      - { dr: "/dev/mapper/gluster7-brickvol", mnt: "/data/glusterfs/glass7"}
+      - { dr: "/dev/mapper/gluster8-brickvol", mnt: "/data/glusterfs/glass8"}
+      - { dr: "/dev/mapper/gluster9-brickvol", mnt: "/data/glusterfs/glass9"}
+
+  - name: Add fs endpoint repl
+    mount:
+      src: localhost:/glass_cfg
+      path: /mnt/replicated
+      fstype: glusterfs
+      opts: defaults,_netdev,x-systemd.requires=glusterd.service,x-systemd.automount
+      state: present
+
+  - name: Add fs endpoint bulk
+    mount:
+      src: localhost:/glass_bulk
+      path: /mnt/bulk
+      fstype: glusterfs
+      opts: defaults,_netdev,x-systemd.requires=glusterd.service,x-systemd.automount
+      state: present
+
+  - name: Install glusterfs
+    package:
+      name:
+        - lvm2
+        - glusterfs
+        - glusterfs-libs
+        - glusterfs-server
+      state: present
+
+  - name: Configure Firewall
+    firewalld:
+      service: glusterfs
+      permanent: yes
+      state: enabled
+
+  - name: Reconnect to peers
+    lineinfile:
+      path: /var/lib/glusterd/glusterd.info
+      line: '{{ item }}'
+      state: present
+    loop:
+      - UUID=41ffcfc7-fc3f-4957-b9f6-50fd43562b5b
+      - operating-version=90000
+
+  # https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.2/html/administration_guide/sect-replacing_hosts#Replacing_a_Host_Machine_with_the_Same_Hostname
+  
+  - name: Start gluster service
+    systemd:
+      name: '{{ item }}'
+      state: started
+      enabled: true
+    loop:
+      - glusterfsd
+      - glusterd
