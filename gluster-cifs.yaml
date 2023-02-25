@@ -1,0 +1,29 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+
+    - name: Install samba
+      package:
+        name:
+          - centos-release-samba
+          - samba
+          - samba-vfs-glusterfs
+        state: latest
+
+    - name: Configure samba
+      blockinfile:
+        block: |
+          [roms]
+          path = /mnt/bulk/games
+          valid users = ss
+          read only = yes
+          guest ok = yes
+          browsable = yes
+        path: '/etc/samba/smb.conf'
+
+    - name: Enable samba daemon
+      systemd:
+        name: smb
+        state: started
+        enabled: true
